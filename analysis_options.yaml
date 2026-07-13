@@ -1,0 +1,18 @@
+# Lint bar for the clean-code rule. Add rules over time, do not loosen them.
+include: package:flutter_lints/flutter.yaml
+
+analyzer:
+  language:
+    strict-casts: true
+    strict-raw-types: true
+  errors:
+    # Treat these as build-breaking, not advisory.
+    avoid_print: error
+    prefer_const_constructors: warning
+
+linter:
+  rules:
+    - always_declare_return_types
+    - prefer_final_locals
+    - unawaited_futures
+    - avoid_dynamic_calls

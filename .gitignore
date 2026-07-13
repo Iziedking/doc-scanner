@@ -1,0 +1,19 @@
+.dart_tool/
+.packages
+build/
+.flutter-plugins
+.flutter-plugins-dependencies
+.idea/
+*.iml
+.DS_Store
+
+# Internal planning docs: keep out of the repo.
+PLAN.md
+docs/freemium-model.md
+docs/play-store-launch.md
+
+# Secrets: never commit. RevenueCat private keys, cloud endpoints, keystores.
+lib/core/secrets.dart
+android/key.properties
+*.keystore
+*.jks

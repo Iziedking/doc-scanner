@@ -1,0 +1,53 @@
+name: docscan
+description: A document scanner for Android and iOS. Scan, organize, and export PDFs on device.
+publish_to: none
+version: 0.1.0+1
+
+environment:
+  sdk: ">=3.4.0 <4.0.0"
+
+# Versions below were current when this plan was written. Confirm each on pub.dev
+# and update before running flutter pub get. Documentation first, always.
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # Scanner: ML Kit on Android, VisionKit on iOS.
+  flutter_doc_scanner: ^0.0.15
+  # Fallback scanner if the above misbehaves on a device. Keep one wired at a time.
+  # google_mlkit_document_scanner: ^0.3.0
+
+  # On-device OCR.
+  google_mlkit_text_recognition: ^0.15.0
+
+  # Storage.
+  sqflite: ^2.3.3
+  path_provider: ^2.1.4
+  path: ^1.9.0
+
+  # PDF assembly, preview, print.
+  pdf: ^3.11.1
+  printing: ^5.13.2
+
+  # Share and save out.
+  share_plus: ^10.0.2
+
+  # Image compression and downscale.
+  image: ^4.2.0
+
+  # Billing (RevenueCat).
+  purchases_flutter: ^8.0.0
+
+  # State.
+  flutter_riverpod: ^2.5.1
+
+  # Small id generator for documents and pages.
+  uuid: ^4.4.2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+
+flutter:
+  uses-material-design: true
