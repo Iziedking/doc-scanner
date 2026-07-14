@@ -8,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/constants.dart';
 import '../../core/result.dart';
 import '../../services/scanner_service.dart';
+import '../../state/ads_controller.dart';
 import '../../state/billing_controller.dart';
 import '../../state/library_controller.dart';
 import '../../state/ocr_runner.dart';
@@ -42,7 +43,13 @@ Future<void> startScanFlow(BuildContext context, WidgetRef ref) async {
           .read(libraryProvider.notifier)
           .addFromScan(name.trim(), imagePaths);
 
-      if (!isPro) return;
+      if (!isPro) {
+        // The scan is saved and on screen before any ad appears. Never
+        // interrupt the task itself.
+        await ref.read(adsServiceProvider).onScanCompleted();
+        return;
+      }
+
       final ocr = await ref.read(ocrRunnerProvider).run(document);
       if (ocr case Err(message: final message)) {
         if (context.mounted) {

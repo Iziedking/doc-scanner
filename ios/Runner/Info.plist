@@ -6,6 +6,10 @@
 		<true/>
 		<key>NSCameraUsageDescription</key>
 		<string>DocScan uses the camera to scan paper documents. Scans stay on this device.</string>
+		<!-- AdMob App ID. Google's sample id, which serves test ads only.
+		     Replace with the real App ID before the production release. -->
+		<key>GADApplicationIdentifier</key>
+		<string>ca-app-pub-3940256099942544~1458002511</string>
 		<key>CFBundleDevelopmentRegion</key>
 		<string>$(DEVELOPMENT_LANGUAGE)</string>
 		<key>CFBundleDisplayName</key>

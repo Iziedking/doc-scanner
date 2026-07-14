@@ -10,6 +10,10 @@ class AppLimits {
   /// The ML Kit scanner needs a device with at least this much RAM, per the
   /// ML Kit docs. Below it the API returns UNSUPPORTED.
   static const int minRamMb = 1700;
+
+  /// Free users see an interstitial after every nth completed scan. Every
+  /// scan would be hostile; never would not pay for the free tier.
+  static const int scansPerAd = 3;
 }
 
 class Entitlements {

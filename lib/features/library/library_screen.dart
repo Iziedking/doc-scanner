@@ -9,6 +9,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme.dart';
 import '../../models/document.dart';
 import '../../state/library_controller.dart';
+import '../ads/ad_banner.dart';
 import '../scan/scan_flow.dart';
 import '../settings/settings_screen.dart';
 import '../viewer/viewer_screen.dart';
@@ -90,6 +91,8 @@ class LibraryScreen extends ConsumerWidget {
                           },
                         ),
             ),
+            // Renders nothing for Pro users, so no gap is left behind.
+            const AdBanner(),
           ],
         ),
       ),

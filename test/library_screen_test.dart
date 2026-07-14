@@ -3,7 +3,9 @@
 
 import 'package:docscan/features/library/library_screen.dart';
 import 'package:docscan/models/document.dart';
+import 'package:docscan/services/ads_service.dart';
 import 'package:docscan/services/billing_service.dart';
+import 'package:docscan/state/ads_controller.dart';
 import 'package:docscan/state/billing_controller.dart';
 import 'package:docscan/state/library_controller.dart';
 import 'package:flutter/material.dart';
@@ -22,6 +24,9 @@ Widget appWith(FakeStorageService storage) {
     overrides: [
       storageServiceProvider.overrideWith((ref) => storage),
       billingServiceProvider.overrideWith((ref) => FreeBillingService()),
+      // A real ad cannot load in a widget test, and the banner must render
+      // nothing when ads are off, which is what this asserts by proxy.
+      adsServiceProvider.overrideWith((ref) => const NoAdsService()),
     ],
     child: const MaterialApp(home: LibraryScreen()),
   );

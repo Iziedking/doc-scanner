@@ -37,6 +37,9 @@ dependencies:
   # Billing (RevenueCat).
   purchases_flutter: 10.4.1
 
+  # Ads (AdMob). Free tier only; Pro turns them off.
+  google_mobile_ads: 9.0.0
+
   # State.
   flutter_riverpod: 3.3.2
 
