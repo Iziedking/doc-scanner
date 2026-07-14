@@ -1,57 +1,94 @@
-// The upgrade screen. Lists what Pro unlocks and runs the RevenueCat purchase.
-// Keep the copy honest: free stays useful, Pro removes friction.
+// The upgrade screen. The emblem leads, the perks are concrete, the price
+// button is the only gold on the screen. Keep the copy honest: free stays
+// useful, Pro removes friction.
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/result.dart';
+import '../../core/theme.dart';
 import '../../state/billing_controller.dart';
 
 class PaywallScreen extends ConsumerWidget {
   const PaywallScreen({super.key});
 
   static const _perks = [
-    'Remove the export watermark',
-    'Unlimited pages per document',
-    'Text recognition and search',
-    'Merge, reorder, and compress PDFs',
-    'Cloud backup',
+    (Icons.layers_outlined, 'Unlimited pages', 'No cap per document.'),
+    (Icons.text_fields, 'Text recognition', 'Every scan becomes searchable.'),
+    (Icons.branding_watermark_outlined, 'Clean exports',
+        'No watermark on your PDFs.'),
+    (Icons.picture_as_pdf_outlined, 'PDF tools',
+        'Merge, reorder, and compress.'),
+    (Icons.cloud_outlined, 'Cloud backup', 'Coming soon, included in Pro.'),
   ];
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final scheme = Theme.of(context).colorScheme;
     return Scaffold(
-      appBar: AppBar(title: const Text('DocScan Pro')),
-      body: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            const SizedBox(height: 8),
-            Text('Upgrade to Pro',
-                style: Theme.of(context).textTheme.headlineSmall),
-            const SizedBox(height: 16),
-            for (final perk in _perks)
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 6),
-                child: Row(
-                  children: [
-                    const Icon(Icons.check_circle, size: 20),
-                    const SizedBox(width: 10),
-                    Expanded(child: Text(perk)),
-                  ],
-                ),
+      appBar: AppBar(),
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(24, 0, 24, 16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const SizedBox(height: 8),
+              Center(
+                child: Image.asset(BrandAssets.emblem, width: 72, height: 72),
               ),
-            const Spacer(),
-            FilledButton(
-              onPressed: () => _upgrade(context, ref),
-              child: const Text('Upgrade'),
-            ),
-            TextButton(
-              onPressed: () => _restore(context, ref),
-              child: const Text('Restore purchase'),
-            ),
-          ],
+              const SizedBox(height: 16),
+              Text(
+                'DocScan Pro',
+                textAlign: TextAlign.center,
+                style: Theme.of(context)
+                    .textTheme
+                    .headlineSmall
+                    ?.copyWith(fontWeight: FontWeight.w700),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                'For people who scan every day.',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: scheme.onSurfaceVariant),
+              ),
+              const SizedBox(height: 28),
+              for (final (icon, title, detail) in _perks)
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  child: Row(
+                    children: [
+                      Icon(icon, size: 22, color: scheme.onSurfaceVariant),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(title,
+                                style: const TextStyle(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w600)),
+                            Text(detail,
+                                style: TextStyle(
+                                    fontSize: 13,
+                                    color: scheme.onSurfaceVariant)),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              const Spacer(),
+              FilledButton(
+                onPressed: () => _upgrade(context, ref),
+                child: const Text('Upgrade to Pro'),
+              ),
+              TextButton(
+                onPressed: () => _restore(context, ref),
+                child: const Text('Restore purchase'),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -66,7 +103,8 @@ class PaywallScreen extends ConsumerWidget {
       case Ok(value: false):
         break; // The user backed out of the store sheet. Nothing to say.
       case Err(message: final m):
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(m)));
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(m)));
     }
   }
 
@@ -78,6 +116,7 @@ class PaywallScreen extends ConsumerWidget {
       Ok(value: false) => 'No previous purchase was found.',
       Err(message: final m) => m,
     };
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(message)));
   }
 }
