@@ -1,14 +1,16 @@
-// App entry. Opens the storage service and configures billing, then injects
-// both into the Riverpod providers the UI reads. Keep startup work here so the
-// widgets stay free of setup logic.
+// App entry. Opens the storage service, configures billing, and checks the
+// first-run flag, then injects everything into the Riverpod providers the UI
+// reads. Keep startup work here so the widgets stay free of setup logic.
 
 import 'dart:io' show Platform;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'app.dart';
 import 'core/secrets.dart';
+import 'features/onboarding/onboarding_screen.dart';
 import 'services/billing_service.dart';
 import 'services/storage_service.dart';
 import 'state/billing_controller.dart';
@@ -19,6 +21,8 @@ Future<void> main() async {
 
   final storage = await SqfliteStorageService.open();
   final billing = await _configureBilling();
+  final prefs = await SharedPreferences.getInstance();
+  final showOnboarding = !(prefs.getBool(onboardingSeenKey) ?? false);
 
   runApp(
     ProviderScope(
@@ -26,7 +30,7 @@ Future<void> main() async {
         storageServiceProvider.overrideWith((ref) => storage),
         billingServiceProvider.overrideWith((ref) => billing),
       ],
-      child: const DocScanApp(),
+      child: DocScanApp(showOnboarding: showOnboarding),
     ),
   );
 }
