@@ -44,8 +44,9 @@ class SettingsScreen extends ConsumerWidget {
                                 fontSize: 15, fontWeight: FontWeight.w600)),
                         Text(
                           isPro
-                              ? 'Everything is unlocked.'
-                              : 'Up to 5 pages per scan, watermarked exports.',
+                              ? 'Everything is unlocked. No ads.'
+                              : 'Up to 5 pages per scan, watermarked exports, '
+                                  'and ads.',
                           style: TextStyle(
                               fontSize: 13, color: scheme.onSurfaceVariant),
                         ),

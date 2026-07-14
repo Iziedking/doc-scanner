@@ -27,6 +27,15 @@ class PrivacyPolicyScreen extends StatelessWidget {
           'leaves the phone only if you export the document.',
     ),
     (
+      'Advertising',
+      'The free version shows ads from Google AdMob. To show them, AdMob '
+          'receives your device\'s advertising identifier and general '
+          'information about your device, and it may use these to personalize '
+          'ads. It never receives your documents. In regions that require it, '
+          'you are asked for consent before any ad loads, and you can decline. '
+          'Upgrading to Pro removes ads completely.',
+    ),
+    (
       'Purchases',
       'If you upgrade to Pro, the purchase is processed by the app store and '
           'our billing provider, RevenueCat. They receive purchase details, '

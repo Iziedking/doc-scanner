@@ -13,6 +13,7 @@ class PaywallScreen extends ConsumerWidget {
   const PaywallScreen({super.key});
 
   static const _perks = [
+    (Icons.block, 'No ads', 'Every ad disappears the moment you upgrade.'),
     (Icons.layers_outlined, 'Unlimited pages', 'No cap per document.'),
     (Icons.text_fields, 'Text recognition', 'Every scan becomes searchable.'),
     (Icons.branding_watermark_outlined, 'Clean exports',
