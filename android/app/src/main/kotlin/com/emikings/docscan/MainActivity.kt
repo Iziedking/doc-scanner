@@ -1,4 +1,4 @@
-package com.example.docscan
+package com.emikings.docscan
 
 import io.flutter.embedding.android.FlutterActivity
 
