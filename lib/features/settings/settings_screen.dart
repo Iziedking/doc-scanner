@@ -1,11 +1,12 @@
-// Settings: Pro status, restore, and the privacy note. Kept small on purpose.
-// TODO: add the privacy policy page and an onboarding entry for the on-device
-// privacy story before the store review (milestone M6).
+// Settings: Pro status, upgrade and restore, and the privacy note. Kept small
+// on purpose. The privacy policy page and onboarding land with milestone M6.
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/result.dart';
 import '../../state/billing_controller.dart';
+import '../paywall/paywall_screen.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
@@ -20,10 +21,19 @@ class SettingsScreen extends ConsumerWidget {
           ListTile(
             title: const Text('Plan'),
             subtitle: Text(isPro ? 'Pro' : 'Free'),
+            trailing: isPro
+                ? null
+                : FilledButton.tonal(
+                    onPressed: () => Navigator.of(context).push(
+                      MaterialPageRoute<void>(
+                          builder: (_) => const PaywallScreen()),
+                    ),
+                    child: const Text('Upgrade'),
+                  ),
           ),
           ListTile(
             title: const Text('Restore purchase'),
-            onTap: () => ref.read(billingProvider.notifier).restore(),
+            onTap: () => _restore(context, ref),
           ),
           const ListTile(
             title: Text('Privacy'),
@@ -32,5 +42,16 @@ class SettingsScreen extends ConsumerWidget {
         ],
       ),
     );
+  }
+
+  Future<void> _restore(BuildContext context, WidgetRef ref) async {
+    final result = await ref.read(billingProvider.notifier).restore();
+    if (!context.mounted) return;
+    final message = switch (result) {
+      Ok(value: true) => 'Pro restored.',
+      Ok(value: false) => 'No previous purchase was found.',
+      Err(message: final m) => m,
+    };
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
   }
 }

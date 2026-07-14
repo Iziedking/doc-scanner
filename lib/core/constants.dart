@@ -1,7 +1,11 @@
 /// Single source of truth for limits and keys. No magic numbers in the widgets.
 class AppLimits {
-  /// Free users can save up to this many pages per document. Pro is unlimited.
+  /// Free users can save up to this many pages per document.
   static const int freePagesPerDocument = 5;
+
+  /// "Unlimited" for Pro still needs a number, because the ML Kit scan UI
+  /// takes a page limit. High enough that nobody hits it in one sitting.
+  static const int proPagesPerDocument = 100;
 
   /// The ML Kit scanner needs a device with at least this much RAM, per the
   /// ML Kit docs. Below it the API returns UNSUPPORTED.

@@ -21,19 +21,28 @@ class Document {
 
   int get pageCount => pages.length;
 
+  /// "1 page" or "3 pages", for tile and sheet subtitles.
+  String get pageCountLabel =>
+      pageCount == 1 ? '1 page' : '$pageCount pages';
+
   /// The first page's image, used as the library thumbnail. Null when empty.
   String? get thumbnailPath => pages.isEmpty ? null : pages.first.imagePath;
 
+  static const Object _unset = Object();
+
+  /// folderId uses a sentinel default so callers can clear it with an explicit
+  /// null, which `??` would otherwise swallow.
   Document copyWith({
     String? name,
-    String? folderId,
+    Object? folderId = _unset,
     DateTime? updatedAt,
     List<DocPage>? pages,
   }) =>
       Document(
         id: id,
         name: name ?? this.name,
-        folderId: folderId ?? this.folderId,
+        folderId:
+            identical(folderId, _unset) ? this.folderId : folderId as String?,
         createdAt: createdAt,
         updatedAt: updatedAt ?? this.updatedAt,
         pages: pages ?? this.pages,

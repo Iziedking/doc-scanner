@@ -1,7 +1,9 @@
-// Wraps: purchases_flutter (RevenueCat). One entitlement, "pro", drives every
-// gated feature. Verify the RevenueCat Flutter API and set up your products in
-// the RevenueCat and Play Console dashboards. Docs:
-// https://www.revenuecat.com/docs/getting-started/installation/flutter
+// Wraps: purchases_flutter 10.4.1 (RevenueCat), verified on pub.dev
+// 2026-07-13. Two changes matter since older majors: purchase methods return a
+// PurchaseResult (customerInfo plus storeTransaction) instead of CustomerInfo,
+// and version 10 raised the Android floor to API 23. One entitlement, "pro",
+// drives every gated feature. Docs:
+// https://www.revenuecat.com/docs/getting-started/configuring-sdk
 
 import 'package:purchases_flutter/purchases_flutter.dart';
 
@@ -32,12 +34,14 @@ class RevenueCatBillingService implements BillingService {
   Future<Result<bool>> purchasePro() async {
     try {
       final offerings = await Purchases.getOfferings();
-      final pkg = offerings.current?.availablePackages.first;
-      if (pkg == null) {
+      final packages = offerings.current?.availablePackages;
+      if (packages == null || packages.isEmpty) {
         return const Err('No subscription is available right now.');
       }
-      final info = await Purchases.purchasePackage(pkg);
-      final pro = info.entitlements.active.containsKey(Entitlements.pro);
+      final result =
+          await Purchases.purchase(PurchaseParams.package(packages.first));
+      final pro =
+          result.customerInfo.entitlements.active.containsKey(Entitlements.pro);
       return Ok(pro);
     } catch (e) {
       return Err('The purchase did not complete.', cause: e);
@@ -53,4 +57,22 @@ class RevenueCatBillingService implements BillingService {
       return Err('Restore failed.', cause: e);
     }
   }
+}
+
+/// Used while the RevenueCat keys are empty, which is the normal state during
+/// development. Everything reads as free and purchase attempts explain why.
+class FreeBillingService implements BillingService {
+  @override
+  Future<void> init(String publicSdkKey) async {}
+
+  @override
+  Future<bool> isPro() async => false;
+
+  @override
+  Future<Result<bool>> purchasePro() async =>
+      const Err('Purchases are not available in this build.');
+
+  @override
+  Future<Result<bool>> restore() async =>
+      const Err('Purchases are not available in this build.');
 }

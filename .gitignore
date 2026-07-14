@@ -7,6 +7,15 @@ build/
 *.iml
 .DS_Store
 
+# Platform build outputs and local machine config.
+android/local.properties
+android/.gradle/
+ios/Pods/
+ios/.symlinks/
+ios/Flutter/ephemeral/
+ios/Flutter/Generated.xcconfig
+ios/Flutter/flutter_export_environment.sh
+
 # Internal planning docs: keep out of the repo.
 PLAN.md
 docs/freemium-model.md

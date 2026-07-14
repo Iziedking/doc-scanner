@@ -2,10 +2,13 @@
 // both into the Riverpod providers the UI reads. Keep startup work here so the
 // widgets stay free of setup logic.
 
+import 'dart:io' show Platform;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'app.dart';
+import 'core/secrets.dart';
 import 'services/billing_service.dart';
 import 'services/storage_service.dart';
 import 'state/billing_controller.dart';
@@ -14,20 +17,30 @@ import 'state/library_controller.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  final storage = await StorageService.open();
-
-  final billing = RevenueCatBillingService();
-  // Replace with your RevenueCat public SDK key. It is safe to ship in the app,
-  // but load it from a git-ignored config rather than hardcoding here.
-  // await billing.init(Secrets.revenueCatPublicKey);
+  final storage = await SqfliteStorageService.open();
+  final billing = await _configureBilling();
 
   runApp(
     ProviderScope(
       overrides: [
-        storageServiceProvider.overrideWithValue(storage),
-        billingServiceProvider.overrideWithValue(billing),
+        storageServiceProvider.overrideWith((ref) => storage),
+        billingServiceProvider.overrideWith((ref) => billing),
       ],
       child: const DocScanApp(),
     ),
   );
+}
+
+/// RevenueCat keys are per store. An empty key means the dashboards are not
+/// set up yet, so the app runs in free mode instead of crashing at startup.
+Future<BillingService> _configureBilling() async {
+  final key = Platform.isAndroid
+      ? Secrets.revenueCatAndroidKey
+      : Secrets.revenueCatIosKey;
+  if (key.isEmpty) {
+    return FreeBillingService();
+  }
+  final billing = RevenueCatBillingService();
+  await billing.init(key);
+  return billing;
 }

@@ -1,7 +1,7 @@
-// Wraps: sqflite + path_provider. Metadata in the database, page images and
-// generated PDFs as files in the app documents directory. The database never
-// holds image bytes, only paths.
-// Verify sqflite and path_provider APIs on pub.dev before shipping.
+// Wraps: sqflite 2.4.3 and path_provider 2.1.6, verified on pub.dev
+// 2026-07-13. Metadata lives in the database, page images and generated PDFs
+// live as files in the app documents directory. The database never holds image
+// bytes, only paths.
 
 import 'dart:io';
 
@@ -15,30 +15,58 @@ import '../models/doc_page.dart';
 import '../models/document.dart';
 import '../models/folder.dart';
 
-class StorageService {
-  StorageService._(this._db, this._filesDir);
+/// The interface the controllers talk to. Widget tests fake this; unit tests
+/// run the sqflite implementation against a real SQLite through ffi.
+abstract interface class StorageService {
+  Future<Document> createDocument({
+    required String name,
+    required List<String> scannedImagePaths,
+    String? folderId,
+  });
+  Future<List<Document>> listDocuments({String? folderId, String? query});
+  Future<void> renameDocument(String id, String name);
+  Future<void> deleteDocument(String id);
+  Future<void> setPageOcr(String pageId, String text);
+  Future<Folder> createFolder(String name);
+  Future<List<Folder>> listFolders();
+  Future<void> deleteFolder(String id);
+  Future<void> moveToFolder(String documentId, String? folderId);
+}
+
+class SqfliteStorageService implements StorageService {
+  SqfliteStorageService._(this._db, this._filesDir);
 
   final Database _db;
   final Directory _filesDir;
   static const _uuid = Uuid();
 
   /// Open the database, create tables on first run, and make sure the images
-  /// directory exists. Call once at startup.
-  static Future<StorageService> open() async {
-    final docsDir = await getApplicationDocumentsDirectory();
+  /// directory exists. Call once at startup. Tests pass their own [baseDir]
+  /// and [dbFactory] (sqflite_common_ffi); the app uses the platform defaults.
+  static Future<SqfliteStorageService> open({
+    Directory? baseDir,
+    DatabaseFactory? dbFactory,
+  }) async {
+    final docsDir = baseDir ?? await getApplicationDocumentsDirectory();
     final filesDir = Directory(p.join(docsDir.path, 'pages'));
     if (!filesDir.existsSync()) {
       filesDir.createSync(recursive: true);
     }
 
-    final db = await openDatabase(
+    final factory = dbFactory ?? databaseFactory;
+    final db = await factory.openDatabase(
       p.join(docsDir.path, Db.fileName),
-      version: Db.version,
-      onConfigure: (db) => db.execute('PRAGMA foreign_keys = ON'),
-      onCreate: _createSchema,
+      options: OpenDatabaseOptions(
+        version: Db.version,
+        onConfigure: (db) => db.execute('PRAGMA foreign_keys = ON'),
+        onCreate: _createSchema,
+      ),
     );
-    return StorageService._(db, filesDir);
+    return SqfliteStorageService._(db, filesDir);
   }
+
+  /// The app never closes the database; tests do, so the file can be deleted.
+  Future<void> close() => _db.close();
 
   static Future<void> _createSchema(Database db, int version) async {
     await db.execute('''
@@ -72,6 +100,7 @@ class StorageService {
 
   /// Move freshly scanned images into the app's own directory so they survive,
   /// then create the document and its page rows in one transaction.
+  @override
   Future<Document> createDocument({
     required String name,
     required List<String> scannedImagePaths,
@@ -109,7 +138,8 @@ class StorageService {
     return document;
   }
 
-  Future<String> _persistImage(String sourcePath, String docId, int index) async {
+  Future<String> _persistImage(
+      String sourcePath, String docId, int index) async {
     final src = File(sourcePath.replaceFirst('file://', ''));
     final ext = p.extension(src.path).isEmpty ? '.jpg' : p.extension(src.path);
     final dest = p.join(_filesDir.path, '${docId}_$index$ext');
@@ -117,6 +147,7 @@ class StorageService {
     return dest;
   }
 
+  @override
   Future<List<Document>> listDocuments({String? folderId, String? query}) async {
     final where = <String>[];
     final args = <Object?>[];
@@ -128,7 +159,9 @@ class StorageService {
       where.add('(name LIKE ? OR id IN '
           '(SELECT document_id FROM pages WHERE ocr_text LIKE ?))');
       final like = '%${query.trim()}%';
-      args..add(like)..add(like);
+      args
+        ..add(like)
+        ..add(like);
     }
 
     final rows = await _db.query(
@@ -156,6 +189,7 @@ class StorageService {
     return rows.map(DocPage.fromRow).toList();
   }
 
+  @override
   Future<void> renameDocument(String id, String name) async {
     await _db.update(
       'documents',
@@ -165,6 +199,7 @@ class StorageService {
     );
   }
 
+  @override
   Future<void> deleteDocument(String id) async {
     final pages = await _loadPages(id);
     for (final page in pages) {
@@ -174,11 +209,13 @@ class StorageService {
     await _db.delete('documents', where: 'id = ?', whereArgs: [id]);
   }
 
+  @override
   Future<void> setPageOcr(String pageId, String text) async {
     await _db.update('pages', {'ocr_text': text},
         where: 'id = ?', whereArgs: [pageId]);
   }
 
+  @override
   Future<Folder> createFolder(String name) async {
     final folder =
         Folder(id: _uuid.v4(), name: name, createdAt: DateTime.now());
@@ -186,15 +223,27 @@ class StorageService {
     return folder;
   }
 
+  @override
   Future<List<Folder>> listFolders() async {
     final rows = await _db.query('folders', orderBy: 'name ASC');
     return rows.map(Folder.fromRow).toList();
   }
 
+  /// Documents inside the folder move to the root, they are not deleted. The
+  /// schema's ON DELETE SET NULL handles that.
+  @override
+  Future<void> deleteFolder(String id) async {
+    await _db.delete('folders', where: 'id = ?', whereArgs: [id]);
+  }
+
+  @override
   Future<void> moveToFolder(String documentId, String? folderId) async {
     await _db.update(
       'documents',
-      {'folder_id': folderId, 'updated_at': DateTime.now().millisecondsSinceEpoch},
+      {
+        'folder_id': folderId,
+        'updated_at': DateTime.now().millisecondsSinceEpoch,
+      },
       where: 'id = ?',
       whereArgs: [documentId],
     );

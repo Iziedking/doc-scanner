@@ -4,50 +4,51 @@ publish_to: none
 version: 0.1.0+1
 
 environment:
-  sdk: ">=3.4.0 <4.0.0"
+  sdk: ">=3.6.0 <4.0.0"
 
-# Versions below were current when this plan was written. Confirm each on pub.dev
-# and update before running flutter pub get. Documentation first, always.
+# Every version below was verified on pub.dev on 2026-07-13 and pinned exactly,
+# per the documentation-first rule in PLAN.md. When you bump one, read its
+# changelog first. purchases_flutter 10 raised the Android floor to API 23.
 dependencies:
   flutter:
     sdk: flutter
 
   # Scanner: ML Kit on Android, VisionKit on iOS.
-  flutter_doc_scanner: ^0.0.15
-  # Fallback scanner if the above misbehaves on a device. Keep one wired at a time.
-  # google_mlkit_document_scanner: ^0.3.0
+  flutter_doc_scanner: 0.0.21
 
   # On-device OCR.
-  google_mlkit_text_recognition: ^0.15.0
+  google_mlkit_text_recognition: 0.16.0
 
   # Storage.
-  sqflite: ^2.3.3
-  path_provider: ^2.1.4
-  path: ^1.9.0
+  sqflite: 2.4.3
+  path_provider: 2.1.6
+  path: 1.9.1
 
   # PDF assembly, preview, print.
-  pdf: ^3.11.1
-  printing: ^5.13.2
+  pdf: 3.13.0
+  printing: 5.15.0
 
   # Share and save out.
-  share_plus: ^10.0.2
+  share_plus: 13.2.0
 
   # Image compression and downscale.
-  image: ^4.2.0
+  image: 4.9.1
 
   # Billing (RevenueCat).
-  purchases_flutter: ^8.0.0
+  purchases_flutter: 10.4.1
 
   # State.
-  flutter_riverpod: ^2.5.1
+  flutter_riverpod: 3.3.2
 
   # Small id generator for documents and pages.
-  uuid: ^4.4.2
+  uuid: 4.5.3
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  flutter_lints: ^4.0.0
+  flutter_lints: 6.0.0
+  # Runs sqflite against a real SQLite in unit tests, no device needed.
+  sqflite_common_ffi: 2.4.2
 
 flutter:
   uses-material-design: true

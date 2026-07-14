@@ -16,13 +16,19 @@ the quickstart.
 
 ## Before you build
 
-The plugin versions in `pubspec.yaml` were current when the plan was written.
-Confirm each on pub.dev and update before you run anything. This is the
+Every version in `pubspec.yaml` was verified on pub.dev on 2026-07-13 and is
+pinned exactly. When you bump one, read its changelog first. This is the
 documentation-first rule and it matters most for the scanner plugin, whose API
 has changed between releases.
 
+Billing keys live outside the repo. Copy `lib/core/secrets.example.dart` to
+`lib/core/secrets.dart` (git-ignored) and fill in your RevenueCat keys when the
+dashboards are set up. Empty keys keep the app in free mode, which is the
+normal state during development.
+
 ```bash
 flutter pub get
+flutter test       # storage, PDF, and library screen tests run on the desktop
 flutter run        # on a real Android device, not an emulator, for the camera
 ```
 

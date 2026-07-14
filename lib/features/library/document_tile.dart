@@ -9,12 +9,12 @@ class DocumentTile extends StatelessWidget {
     super.key,
     required this.document,
     required this.onTap,
-    required this.onDelete,
+    required this.onLongPress,
   });
 
   final Document document;
   final VoidCallback onTap;
-  final VoidCallback onDelete;
+  final VoidCallback onLongPress;
 
   @override
   Widget build(BuildContext context) {
@@ -23,7 +23,7 @@ class DocumentTile extends StatelessWidget {
       clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: onTap,
-        onLongPress: () => _confirmDelete(context),
+        onLongPress: onLongPress,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -39,34 +39,13 @@ class DocumentTile extends StatelessWidget {
                 children: [
                   Text(document.name,
                       maxLines: 1, overflow: TextOverflow.ellipsis),
-                  Text('${document.pageCount} pages',
+                  Text(document.pageCountLabel,
                       style: Theme.of(context).textTheme.bodySmall),
                 ],
               ),
             ),
           ],
         ),
-      ),
-    );
-  }
-
-  void _confirmDelete(BuildContext context) {
-    showDialog<void>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Delete document'),
-        content: Text('Delete "${document.name}"? This cannot be undone.'),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
-          FilledButton(
-            onPressed: () {
-              Navigator.pop(ctx);
-              onDelete();
-            },
-            child: const Text('Delete'),
-          ),
-        ],
       ),
     );
   }

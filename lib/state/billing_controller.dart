@@ -1,40 +1,47 @@
 // Exposes one thing to the UI: is the user Pro. Everything gated reads this.
+// Built on flutter_riverpod 3.3.2 Notifier, not the legacy StateNotifier.
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../core/result.dart';
 import '../services/billing_service.dart';
 
 final billingServiceProvider = Provider<BillingService>((ref) {
   throw UnimplementedError('Override in main() with the configured service.');
 });
 
-class BillingController extends StateNotifier<bool> {
-  BillingController(this._billing) : super(false) {
-    _load();
-  }
+class BillingController extends Notifier<bool> {
+  BillingService get _billing => ref.read(billingServiceProvider);
 
-  final BillingService _billing;
+  @override
+  bool build() {
+    Future.microtask(_load);
+    return false;
+  }
 
   Future<void> _load() async {
     state = await _billing.isPro();
   }
 
-  Future<bool> upgrade() async {
+  /// Runs the purchase and returns the outcome so the paywall can show the
+  /// failure message instead of silently staying free.
+  Future<Result<bool>> upgrade() async {
     final result = await _billing.purchasePro();
     if (result case Ok(value: final pro)) {
       state = pro;
-      return pro;
     }
-    return false;
+    return result;
   }
 
-  Future<void> restore() async {
+  Future<Result<bool>> restore() async {
     final result = await _billing.restore();
-    if (result case Ok(value: final pro)) state = pro;
+    if (result case Ok(value: final pro)) {
+      state = pro;
+    }
+    return result;
   }
 }
 
-final billingProvider =
-    StateNotifierProvider<BillingController, bool>((ref) {
-  return BillingController(ref.watch(billingServiceProvider));
-});
+final billingProvider = NotifierProvider<BillingController, bool>(
+  BillingController.new,
+);
