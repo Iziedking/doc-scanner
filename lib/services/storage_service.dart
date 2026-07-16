@@ -98,8 +98,10 @@ class SqfliteStorageService implements StorageService {
     ''');
   }
 
-  /// Move freshly scanned images into the app's own directory so they survive,
-  /// then create the document and its page rows in one transaction.
+  /// Copy freshly scanned images into the app's own directory so they
+  /// survive, then create the document and its page rows in one transaction.
+  /// If the transaction fails, the copies are removed again so nothing is
+  /// orphaned on disk.
   @override
   Future<Document> createDocument({
     required String name,
@@ -129,18 +131,37 @@ class SqfliteStorageService implements StorageService {
       pages: pages,
     );
 
-    await _db.transaction((txn) async {
-      await txn.insert('documents', document.toRow());
+    try {
+      await _db.transaction((txn) async {
+        await txn.insert('documents', document.toRow());
+        for (final page in pages) {
+          await txn.insert('pages', page.toRow());
+        }
+      });
+    } catch (_) {
       for (final page in pages) {
-        await txn.insert('pages', page.toRow());
+        try {
+          await File(page.imagePath).delete();
+        } catch (_) {
+          // Best effort; an unremovable copy is not worth masking the
+          // original failure.
+        }
       }
-    });
+      rethrow;
+    }
     return document;
   }
 
   Future<String> _persistImage(
       String sourcePath, String docId, int index) async {
-    final src = File(sourcePath.replaceFirst('file://', ''));
+    // Scanners on some platforms hand back file:// URIs with percent-encoded
+    // characters (spaces become %20); Uri.toFilePath decodes them properly,
+    // where a plain prefix strip would produce a nonexistent path.
+    final src = File(
+      sourcePath.startsWith('file://')
+          ? Uri.parse(sourcePath).toFilePath()
+          : sourcePath,
+    );
     final ext = p.extension(src.path).isEmpty ? '.jpg' : p.extension(src.path);
     final dest = p.join(_filesDir.path, '${docId}_$index$ext');
     await src.copy(dest);
@@ -156,9 +177,16 @@ class SqfliteStorageService implements StorageService {
       args.add(folderId);
     }
     if (query != null && query.trim().isNotEmpty) {
-      where.add('(name LIKE ? OR id IN '
-          '(SELECT document_id FROM pages WHERE ocr_text LIKE ?))');
-      final like = '%${query.trim()}%';
+      where.add("(name LIKE ? ESCAPE '\\' OR id IN "
+          "(SELECT document_id FROM pages WHERE ocr_text LIKE ? ESCAPE '\\'))");
+      // % and _ are LIKE wildcards; searching for "100%" must not match
+      // everything, so user text is escaped literally.
+      final escaped = query
+          .trim()
+          .replaceAll('\\', r'\\')
+          .replaceAll('%', r'\%')
+          .replaceAll('_', r'\_');
+      final like = '%$escaped%';
       args
         ..add(like)
         ..add(like);
@@ -199,14 +227,17 @@ class SqfliteStorageService implements StorageService {
     );
   }
 
+  /// The row goes first: if anything fails midway, a leftover image file on
+  /// disk is invisible, but a surviving row pointing at deleted files would
+  /// show broken thumbnails in the library.
   @override
   Future<void> deleteDocument(String id) async {
     final pages = await _loadPages(id);
+    await _db.delete('documents', where: 'id = ?', whereArgs: [id]);
     for (final page in pages) {
       final f = File(page.imagePath);
-      if (f.existsSync()) f.deleteSync();
+      if (await f.exists()) await f.delete();
     }
-    await _db.delete('documents', where: 'id = ?', whereArgs: [id]);
   }
 
   @override

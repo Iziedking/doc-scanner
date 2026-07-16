@@ -4,6 +4,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/text_prompt_dialog.dart';
 import '../../models/document.dart';
 import '../../state/library_controller.dart';
 
@@ -53,29 +54,13 @@ Future<void> showDocumentActionsSheet(
 
 Future<void> _promptRename(
     BuildContext context, WidgetRef ref, Document document) async {
-  final controller = TextEditingController(text: document.name);
-  final name = await showDialog<String>(
-    context: context,
-    builder: (ctx) => AlertDialog(
-      title: const Text('Rename document'),
-      content: TextField(
-        controller: controller,
-        autofocus: true,
-        onSubmitted: (value) => Navigator.pop(ctx, value),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(ctx),
-          child: const Text('Cancel'),
-        ),
-        FilledButton(
-          onPressed: () => Navigator.pop(ctx, controller.text),
-          child: const Text('Save'),
-        ),
-      ],
-    ),
+  final name = await showTextPromptDialog(
+    context,
+    title: 'Rename document',
+    confirmLabel: 'Save',
+    initialText: document.name,
   );
-  if (name == null || name.trim().isEmpty) return;
+  if (name == null || name.trim().isEmpty || !context.mounted) return;
   await ref.read(libraryProvider.notifier).rename(document.id, name.trim());
 }
 

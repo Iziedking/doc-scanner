@@ -105,6 +105,30 @@ void main() {
     expect(hits.single.id, doc.id);
   });
 
+  test('search treats LIKE wildcards as literal text', () async {
+    final a = await fakeScanImage('a.jpg');
+    final b = await fakeScanImage('b.jpg');
+    await storage.createDocument(
+        name: 'Discount 100%', scannedImagePaths: [a]);
+    await storage.createDocument(name: 'Grocery list', scannedImagePaths: [b]);
+
+    // Unescaped, "%" matches everything and "_" matches any character.
+    final percent = await storage.listDocuments(query: '100%');
+    expect(percent.single.name, 'Discount 100%');
+    expect(await storage.listDocuments(query: '_'), isEmpty);
+  });
+
+  test('accepts file:// URIs with percent-encoded characters', () async {
+    final file = File(p.join(tempDir.path, 'scan page.jpg'));
+    await file.writeAsBytes([1, 2, 3]);
+    final uri = Uri.file(file.path).toString();
+    expect(uri, contains('%20'), reason: 'the space must be encoded');
+
+    final doc = await storage
+        .createDocument(name: 'Spaced', scannedImagePaths: [uri]);
+    expect(File(doc.pages.first.imagePath).existsSync(), isTrue);
+  });
+
   test('folders filter documents and deleting one moves them to root',
       () async {
     final a = await fakeScanImage('a.jpg');

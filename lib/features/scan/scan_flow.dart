@@ -19,29 +19,34 @@ final scannerServiceProvider = Provider<ScannerService>((ref) {
 });
 
 Future<void> startScanFlow(BuildContext context, WidgetRef ref) async {
+  // Right after a cold start the entitlement may still be loading; waiting
+  // here keeps a Pro user from being page-capped or counted toward an ad.
+  await ref.read(billingProvider.notifier).ready;
+  if (!context.mounted) return;
+
   final isPro = ref.read(billingProvider);
   final pageLimit =
       isPro ? AppLimits.proPagesPerDocument : AppLimits.freePagesPerDocument;
 
   final result =
       await ref.read(scannerServiceProvider).scan(pageLimit: pageLimit);
+  if (!context.mounted) return;
 
   switch (result) {
     case Err(message: final message):
-      if (context.mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text(message)));
-      }
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(message)));
     case Ok(value: ScanCancelled()):
       return;
     case Ok(value: ScanPages(imagePaths: final imagePaths)):
+      final name = await _askForName(context);
+      if (name == null) return;
       if (!context.mounted) return;
-      final name = await showNameDocumentSheet(context);
-      if (name == null || name.trim().isEmpty) return;
 
       final document = await ref
           .read(libraryProvider.notifier)
-          .addFromScan(name.trim(), imagePaths);
+          .addFromScan(name, imagePaths);
+      if (!context.mounted) return;
 
       if (!isPro) {
         // The scan is saved and on screen before any ad appears. Never
@@ -58,4 +63,37 @@ Future<void> startScanFlow(BuildContext context, WidgetRef ref) async {
         }
       }
   }
+}
+
+/// Asks for a name, and treats a dismissed sheet as a question, not an
+/// answer: the pages already exist, so throwing them away silently would
+/// lose real work. One confirmation, then one more chance to name it.
+Future<String?> _askForName(BuildContext context) async {
+  final name = await showNameDocumentSheet(context);
+  if (name != null && name.trim().isNotEmpty) return name.trim();
+  if (!context.mounted) return null;
+
+  final discard = await showDialog<bool>(
+    context: context,
+    builder: (ctx) => AlertDialog(
+      title: const Text('Discard this scan?'),
+      content: const Text('The scanned pages will be lost.'),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(ctx, false),
+          child: const Text('Keep'),
+        ),
+        FilledButton(
+          onPressed: () => Navigator.pop(ctx, true),
+          child: const Text('Discard'),
+        ),
+      ],
+    ),
+  );
+  if (discard ?? true) return null;
+  if (!context.mounted) return null;
+
+  final retry = await showNameDocumentSheet(context);
+  if (retry == null || retry.trim().isEmpty) return null;
+  return retry.trim();
 }

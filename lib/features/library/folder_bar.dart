@@ -5,6 +5,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/text_prompt_dialog.dart';
 import '../../models/folder.dart';
 import '../../state/library_controller.dart';
 
@@ -55,30 +56,13 @@ class FolderBar extends ConsumerWidget {
   }
 
   Future<void> _promptNewFolder(BuildContext context, WidgetRef ref) async {
-    final controller = TextEditingController();
-    final name = await showDialog<String>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('New folder'),
-        content: TextField(
-          controller: controller,
-          autofocus: true,
-          decoration: const InputDecoration(hintText: 'Folder name'),
-          onSubmitted: (value) => Navigator.pop(ctx, value),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(ctx, controller.text),
-            child: const Text('Create'),
-          ),
-        ],
-      ),
+    final name = await showTextPromptDialog(
+      context,
+      title: 'New folder',
+      confirmLabel: 'Create',
+      hint: 'Folder name',
     );
-    if (name == null || name.trim().isEmpty) return;
+    if (name == null || name.trim().isEmpty || !context.mounted) return;
     await ref.read(libraryProvider.notifier).createFolder(name.trim());
   }
 
