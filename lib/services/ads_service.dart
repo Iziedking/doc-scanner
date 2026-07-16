@@ -32,6 +32,13 @@ abstract interface class AdsService {
   /// completed scan. Does nothing when ads are off.
   Future<void> onScanCompleted();
 
+  /// Whether regulations require offering a way to revisit the ad-consent
+  /// choice (EEA/UK). Drives the "Manage ad consent" entry in Settings.
+  Future<bool> get privacyOptionsRequired;
+
+  /// Shows the UMP privacy options form so the user can change their choice.
+  Future<void> showPrivacyOptions();
+
   void dispose();
 }
 
@@ -44,6 +51,7 @@ class AdMobAdsService implements AdsService {
 
   bool _consented = false;
   bool _initialized = false;
+  bool _disposed = false;
   int _scanCount = 0;
   InterstitialAd? _interstitial;
 
@@ -112,12 +120,19 @@ class AdMobAdsService implements AdsService {
       ConsentRequestParameters(),
       () async {
         // The callback resolves the completer; the returned future carries
-        // no result of its own.
+        // no result of its own. The try/finally guarantees the completer
+        // resolves even if the consent check itself throws, otherwise
+        // initialize() would hang forever with no retry.
         unawaited(
           ConsentForm.loadAndShowConsentFormIfRequired((error) async {
-            _consented = error == null &&
-                await ConsentInformation.instance.canRequestAds();
-            if (!completer.isCompleted) completer.complete();
+            try {
+              _consented = error == null &&
+                  await ConsentInformation.instance.canRequestAds();
+            } catch (_) {
+              _consented = false;
+            } finally {
+              if (!completer.isCompleted) completer.complete();
+            }
           }),
         );
       },
@@ -131,18 +146,24 @@ class AdMobAdsService implements AdsService {
 
   Future<void> _preloadInterstitial() async {
     final unit = _interstitialAdUnitId;
-    if (unit == null || _interstitial != null) return;
+    if (unit == null || _interstitial != null || _disposed) return;
 
     await InterstitialAd.load(
       adUnitId: unit,
       request: const AdRequest(),
       adLoadCallback: InterstitialAdLoadCallback(
         onAdLoaded: (ad) {
+          // The load may finish after this service was replaced (e.g. the
+          // user bought Pro mid-request). A dead service must not hold an ad.
+          if (_disposed) {
+            ad.dispose();
+            return;
+          }
           ad.fullScreenContentCallback = FullScreenContentCallback(
             onAdDismissedFullScreenContent: (ad) {
               ad.dispose();
               _interstitial = null;
-              unawaited(_preloadInterstitial());
+              if (!_disposed) unawaited(_preloadInterstitial());
             },
             onAdFailedToShowFullScreenContent: (ad, err) {
               ad.dispose();
@@ -175,7 +196,32 @@ class AdMobAdsService implements AdsService {
   }
 
   @override
+  Future<bool> get privacyOptionsRequired async {
+    if (isPro || !_initialized) return false;
+    try {
+      final status = await ConsentInformation.instance
+          .getPrivacyOptionsRequirementStatus();
+      return status == PrivacyOptionsRequirementStatus.required;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  @override
+  Future<void> showPrivacyOptions() async {
+    // The returned future completes when the form is dismissed.
+    await ConsentForm.showPrivacyOptionsForm((_) {});
+    // The user may have withdrawn consent; re-check before the next request.
+    try {
+      _consented = await ConsentInformation.instance.canRequestAds();
+    } catch (_) {
+      _consented = false;
+    }
+  }
+
+  @override
   void dispose() {
+    _disposed = true;
     _interstitial?.dispose();
     _interstitial = null;
   }
@@ -196,6 +242,12 @@ class NoAdsService implements AdsService {
 
   @override
   Future<void> onScanCompleted() async {}
+
+  @override
+  Future<bool> get privacyOptionsRequired async => false;
+
+  @override
+  Future<void> showPrivacyOptions() async {}
 
   @override
   void dispose() {}

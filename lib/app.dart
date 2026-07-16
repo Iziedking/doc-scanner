@@ -7,6 +7,7 @@ import 'core/theme.dart';
 import 'features/library/library_screen.dart';
 import 'features/onboarding/onboarding_screen.dart';
 import 'state/ads_controller.dart';
+import 'state/billing_controller.dart';
 
 class DocScanApp extends ConsumerStatefulWidget {
   const DocScanApp({super.key, required this.showOnboarding});
@@ -25,9 +26,18 @@ class _DocScanAppState extends ConsumerState<DocScanApp> {
     // Ads start themselves: consent first, then the SDK, then a preloaded
     // interstitial. Runs after the first frame so the consent form has a
     // window to attach to. Pro users skip the whole thing.
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      unawaited(ref.read(adsServiceProvider).initialize());
-    });
+    WidgetsBinding.instance.addPostFrameCallback((_) => unawaited(_startAds()));
+  }
+
+  Future<void> _startAds() async {
+    // Billing resolves first, so a Pro user whose entitlement is still
+    // loading is never shown the consent form or charged an ad request.
+    await ref.read(billingProvider.notifier).ready;
+    if (!mounted) return;
+    await ref.read(adsServiceProvider).initialize();
+    if (!mounted) return;
+    // Tells the banner (and Settings) that ads are now answerable.
+    ref.read(adsReadyProvider.notifier).markReady();
   }
 
   @override

@@ -35,6 +35,19 @@ void main() {
 
     expect(ads.canServeAds, isFalse);
     expect(ads.bannerAdUnitId, isNull);
+    expect(await ads.privacyOptionsRequired, isFalse);
     await ads.onScanCompleted();
+  });
+
+  test('privacy options are never offered to Pro or before init', () async {
+    final pro = AdMobAdsService(isPro: true);
+    expect(await pro.privacyOptionsRequired, isFalse);
+    pro.dispose();
+
+    // Before initialize() the UMP status is unknown; the answer must be no
+    // without touching the SDK (which would crash in a test).
+    final free = AdMobAdsService(isPro: false);
+    expect(await free.privacyOptionsRequired, isFalse);
+    free.dispose();
   });
 }

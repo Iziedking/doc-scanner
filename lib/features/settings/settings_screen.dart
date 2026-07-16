@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/result.dart';
 import '../../core/theme.dart';
+import '../../state/ads_controller.dart';
 import '../../state/billing_controller.dart';
 import '../paywall/paywall_screen.dart';
 import 'privacy_policy_screen.dart';
@@ -17,6 +18,11 @@ class SettingsScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final isPro = ref.watch(billingProvider);
     final scheme = Theme.of(context).colorScheme;
+    // Only EEA/UK users are required to get a re-consent entry; UMP knows.
+    final consentEntryNeeded = switch (ref.watch(privacyOptionsRequiredProvider)) {
+      AsyncData(:final value) => value,
+      _ => false,
+    };
 
     return Scaffold(
       appBar: AppBar(title: const Text('Settings')),
@@ -91,6 +97,15 @@ class SettingsScreen extends ConsumerWidget {
                   builder: (_) => const PrivacyPolicyScreen()),
             ),
           ),
+          if (consentEntryNeeded)
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(Icons.ads_click_outlined),
+              title: const Text('Manage ad consent'),
+              subtitle: const Text('Review or change your ad choices.'),
+              trailing: const Icon(Icons.chevron_right, size: 20),
+              onTap: () => ref.read(adsServiceProvider).showPrivacyOptions(),
+            ),
           const SizedBox(height: 16),
           _SectionLabel('About'),
           Padding(
