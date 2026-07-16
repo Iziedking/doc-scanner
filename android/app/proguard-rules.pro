@@ -10,6 +10,18 @@
 -keep class androidx.work.** { *; }
 -dontwarn androidx.work.**
 
+# ML Kit and the document scanner plugin. flutter_doc_scanner 0.0.21 ships no
+# consumer proguard rules and calls com.google.mlkit.vision.documentscanner
+# classes reflectively (GmsDocumentScanning, GmsDocumentScanningResult). R8
+# full mode renames them in release, so a scan fails immediately with a
+# generic error before the camera even opens. Debug builds skip R8, which is
+# why scanning worked there. Keep ML Kit and the plugin intact.
+-keep class com.google.mlkit.** { *; }
+-keep interface com.google.mlkit.** { *; }
+-keep class com.google.android.gms.internal.mlkit_** { *; }
+-keep class com.shirsh.flutter_doc_scanner.** { *; }
+-dontwarn com.google.mlkit.**
+
 # google_mlkit_text_recognition ships only the Latin model, but its plugin
 # code references the other script recognizers. R8 fails the release build on
 # the missing classes unless told they are absent on purpose. These rules are
