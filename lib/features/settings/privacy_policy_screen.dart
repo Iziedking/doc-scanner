@@ -17,8 +17,9 @@ class PrivacyPolicyScreen extends StatelessWidget {
     (
       'Camera',
       'Scanning uses the document scanner provided by your phone\'s system '
-          'services. DocScan itself never accesses your camera directly and '
-          'does not request the camera permission.',
+          'services. On Android, DocScan itself never accesses your camera '
+          'directly and does not request the camera permission. The camera '
+          'image is used only to capture the pages you keep.',
     ),
     (
       'Text recognition',

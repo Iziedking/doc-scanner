@@ -41,7 +41,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       OnboardingArt.private,
       'Private by design',
       'Your documents never leave this phone unless you share them. No '
-          'account, no cloud, no tracking.',
+          'account, no cloud, and your scans are never used for ads.',
     ),
   ];
 

@@ -30,9 +30,9 @@ send it, export a PDF and share it to any app, or print it directly.
 
 PRIVATE BY DESIGN
 Most scanner apps upload your documents to their servers. This one does
-not. There is no account, no cloud, and no tracking. Scans, page images,
-and recognized text live only on your device, and they leave it only when
-you share or export them yourself. The app does not even request the
+not. There is no account and no cloud, and your documents are never used
+for ads. Scans, page images, and recognized text live only on your device,
+and they leave it only when you share or export them yourself. The app does not even request the
 camera permission; scanning runs through your phone's own system scanner.
 
 WHAT YOU GET FREE
