@@ -5,6 +5,7 @@
 // drives every gated feature. Docs:
 // https://www.revenuecat.com/docs/getting-started/configuring-sdk
 
+import 'package:flutter/services.dart' show PlatformException;
 import 'package:purchases_flutter/purchases_flutter.dart';
 
 import '../core/constants.dart';
@@ -16,6 +17,10 @@ abstract interface class BillingService {
   Future<bool> isPro();
   Future<Result<bool>> purchasePro();
   Future<Result<bool>> restore();
+
+  /// Fires with the current Pro state whenever the store pushes an update,
+  /// for example a pending Play purchase completing in the background.
+  void onProChanged(void Function(bool isPro) listener);
 }
 
 class RevenueCatBillingService implements BillingService {
@@ -31,6 +36,13 @@ class RevenueCatBillingService implements BillingService {
   }
 
   @override
+  void onProChanged(void Function(bool isPro) listener) {
+    Purchases.addCustomerInfoUpdateListener((info) {
+      listener(info.entitlements.active.containsKey(Entitlements.pro));
+    });
+  }
+
+  @override
   Future<Result<bool>> purchasePro() async {
     try {
       final offerings = await Purchases.getOfferings();
@@ -43,6 +55,14 @@ class RevenueCatBillingService implements BillingService {
       final pro =
           result.customerInfo.entitlements.active.containsKey(Entitlements.pro);
       return Ok(pro);
+    } on PlatformException catch (e) {
+      // Backing out of the Play sheet is a decision, not a failure, and must
+      // not surface as an error snackbar.
+      if (PurchasesErrorHelper.getErrorCode(e) ==
+          PurchasesErrorCode.purchaseCancelledError) {
+        return const Ok(false);
+      }
+      return Err('The purchase did not complete.', cause: e);
     } catch (e) {
       return Err('The purchase did not complete.', cause: e);
     }
@@ -67,6 +87,9 @@ class FreeBillingService implements BillingService {
 
   @override
   Future<bool> isPro() async => false;
+
+  @override
+  void onProChanged(void Function(bool isPro) listener) {}
 
   @override
   Future<Result<bool>> purchasePro() async =>

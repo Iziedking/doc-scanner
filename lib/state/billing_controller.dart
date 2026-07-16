@@ -13,14 +13,30 @@ final billingServiceProvider = Provider<BillingService>((ref) {
 class BillingController extends Notifier<bool> {
   BillingService get _billing => ref.read(billingServiceProvider);
 
+  late Future<void> _firstLoad;
+
   @override
   bool build() {
-    Future.microtask(_load);
+    _firstLoad = _load();
+    // The store can flip the entitlement outside a foreground purchase, for
+    // example when a pending Play purchase completes. Without this the user
+    // would stay free until a manual restore or restart.
+    _billing.onProChanged((pro) => state = pro);
     return false;
   }
 
+  /// Completes when the first entitlement check has finished, successfully
+  /// or not. Startup ordering (ads init, the scan flow's page cap) waits on
+  /// this instead of racing the async load.
+  Future<void> get ready => _firstLoad;
+
   Future<void> _load() async {
-    state = await _billing.isPro();
+    try {
+      state = await _billing.isPro();
+    } catch (_) {
+      // Offline or the store is unreachable: stay free for now. The store
+      // listener above and Restore in Settings both correct this later.
+    }
   }
 
   /// Runs the purchase and returns the outcome so the paywall can show the

@@ -53,6 +53,10 @@ class LibraryState {
 class LibraryController extends Notifier<LibraryState> {
   StorageService get _storage => ref.read(storageServiceProvider);
 
+  /// Increments per refresh so an older, slower query can never overwrite
+  /// the results of a newer one (rapid typing in search).
+  int _refreshSeq = 0;
+
   @override
   LibraryState build() {
     // build() must return synchronously, so the first load is scheduled right
@@ -62,12 +66,21 @@ class LibraryController extends Notifier<LibraryState> {
   }
 
   Future<void> refresh() async {
-    final folders = await _storage.listFolders();
-    final docs = await _storage.listDocuments(
-      folderId: state.selectedFolderId,
-      query: state.query,
-    );
-    state = state.copyWith(documents: docs, folders: folders, loading: false);
+    final seq = ++_refreshSeq;
+    try {
+      final folders = await _storage.listFolders();
+      final docs = await _storage.listDocuments(
+        folderId: state.selectedFolderId,
+        query: state.query,
+      );
+      if (seq != _refreshSeq) return;
+      state = state.copyWith(documents: docs, folders: folders, loading: false);
+    } catch (_) {
+      // A failed load must never strand the screen on the spinner; keep
+      // whatever was on screen and clear the loading flag.
+      if (seq != _refreshSeq) return;
+      state = state.copyWith(loading: false);
+    }
   }
 
   Future<void> search(String query) async {
