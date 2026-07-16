@@ -4,9 +4,8 @@
 # the app at startup before Flutter loads:
 #   Unable to get provider androidx.startup.InitializationProvider
 #   Caused by: Failed to create an instance of androidx.work.impl.WorkDatabase
-# Keeping Room databases and the WorkManager internals fixes it.
--keep class * extends androidx.room.RoomDatabase { <init>(); }
--keep class androidx.work.impl.** { *; }
+# Keeping all of WorkManager fixes it; that rule already covers the
+# generated WorkDatabase in androidx.work.impl, so it stands alone.
 -keep class androidx.work.** { *; }
 -dontwarn androidx.work.**
 
