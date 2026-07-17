@@ -91,11 +91,15 @@ class LibraryScreen extends ConsumerWidget {
                           },
                         ),
             ),
-            // Renders nothing for Pro users, so no gap is left behind.
-            const AdBanner(),
           ],
         ),
       ),
+      // The banner sits in the bottomNavigationBar slot, not in the body, so
+      // the Scaffold lifts the Scan button clear of it. In the body the button
+      // floated over the ad and covered its call-to-action, and a control on
+      // top of an ad invites the accidental clicks that get AdMob accounts
+      // terminated. Renders nothing for Pro users, so no gap is left behind.
+      bottomNavigationBar: const AdBanner(),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => startScanFlow(context, ref),
         icon: const Icon(Icons.document_scanner_outlined),

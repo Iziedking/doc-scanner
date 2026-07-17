@@ -33,8 +33,9 @@ class PrivacyPolicyScreen extends StatelessWidget {
           'receives your device\'s advertising identifier and general '
           'information about your device, and it may use these to personalize '
           'ads. It never receives your documents. In regions that require it, '
-          'you are asked for consent before any ad loads, and you can decline. '
-          'Upgrading to Pro removes ads completely.',
+          'you are asked for consent before any ad loads, you can decline, and '
+          'you can change that choice later under Manage ad consent in '
+          'Settings. Upgrading to Pro removes ads completely.',
     ),
     (
       'Purchases',

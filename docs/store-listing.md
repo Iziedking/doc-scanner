@@ -9,7 +9,7 @@ compares claims against app behavior.
 - App name (30 characters max): `Emikings DocScan`
 - Category: Productivity
 - Free app with in-app purchases (once billing goes live)
-- Contact email: iziedking17@gmail.com
+- Contact email: emmanuelokorie19@gmail.com
 
 ## Short description (80 characters max)
 
